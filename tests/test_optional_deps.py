@@ -73,6 +73,30 @@ def test_binary_keeps_the_google_auth_modules_vertex_needs() -> None:
 def test_release_build_installs_the_vertex_extra() -> None:
     """Keeping google.auth in the bundle only helps if the build installs it."""
     workflow = BUILD_RELEASE_WORKFLOW.read_text(encoding="utf-8")
-    sync_lines = [line.strip() for line in workflow.splitlines() if "uv sync" in line]
+    # A commented-out command must not satisfy the check: a build that stopped
+    # installing the extra would otherwise still pass on the comment's text.
+    sync_lines = [
+        line.strip()
+        for line in workflow.splitlines()
+        if "uv sync" in line and not line.lstrip().startswith("#")
+    ]
     assert sync_lines, "the release workflow no longer runs uv sync"
     assert all("--extra vertex" in line for line in sync_lines), sync_lines
+
+
+def test_workflow_check_ignores_commented_out_sync_commands(tmp_path: Path) -> None:
+    """The workflow check must read commands, not comments that mention them."""
+    workflow = tmp_path / "build-release.yml"
+    workflow.write_text(
+        "        run: |\n          # uv sync --frozen --extra vertex\n          uv sync --frozen\n",
+        encoding="utf-8",
+    )
+
+    sync_lines = [
+        line.strip()
+        for line in workflow.read_text(encoding="utf-8").splitlines()
+        if "uv sync" in line and not line.lstrip().startswith("#")
+    ]
+
+    assert sync_lines == ["uv sync --frozen"]
+    assert not all("--extra vertex" in line for line in sync_lines)
