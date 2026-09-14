@@ -4,7 +4,8 @@ name: Checks
 # are required yet: the issue's rollout is to land the checks, clear any
 # baseline failure, and only then mark each green check required.
 #
-# Type checking lives in typecheck.yml, which runs mypy per platform.
+# Type checking is not covered here; a per-platform mypy workflow is proposed
+# separately in #1301.
 
 on:
   pull_request:
